@@ -22,7 +22,9 @@ export default function Home() {
     updateTime();
     const timer = setInterval(updateTime, 1000);
 
-    const eventSource = new EventSource("/api/sse");
+    const eventSource = new EventSource(
+      process.env.NEXT_PUBLIC_API_URL + "/sse"
+    );
 
     eventSource.onmessage = (event) => {
       try {
@@ -163,7 +165,7 @@ export default function Home() {
           </div>
 
           {/* Disk Usage */}
-          <div className="bg-[#16213e] border border-[#393e5c] p-4 rounded-sm shadow-lg">
+          {/* <div className="bg-[#16213e] border border-[#393e5c] p-4 rounded-sm shadow-lg">
             <h2 className="text-lg font-medium text-white mb-4">Disk Usage</h2>
             <div className="flex justify-between mb-2">
               <span className="text-slate-300">Used</span>
@@ -189,7 +191,7 @@ export default function Home() {
                 {vitals.disk.usedPercent.toFixed(1)}%
               </span>
             </div>
-          </div>
+          </div> */}
 
           {/* Network */}
           <div className="bg-[#16213e] border border-[#393e5c] p-4 rounded-sm shadow-lg">
@@ -303,6 +305,215 @@ export default function Home() {
                     </span>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Hardware Information */}
+          {vitals.hardware && (
+            <div className="bg-[#16213e] border border-[#393e5c] p-4 rounded-sm shadow-lg">
+              <h2 className="text-lg font-medium text-white mb-4">Hardware</h2>
+              <div className="space-y-2">
+                <div>
+                  <div className="text-slate-300 text-sm">CPU</div>
+                  <div className="text-white font-medium">
+                    {vitals.hardware.cpuModel}
+                  </div>
+                </div>
+                <div className="flex justify-between">
+                  <div>
+                    <div className="text-slate-300 text-sm">Cores</div>
+                    <div className="text-white">{vitals.hardware.cpuCores}</div>
+                  </div>
+                  <div>
+                    <div className="text-slate-300 text-sm">Threads</div>
+                    <div className="text-white">
+                      {vitals.hardware.cpuThreads}
+                    </div>
+                  </div>
+                </div>
+                {vitals.hardware.systemModel !== "Unknown" && (
+                  <div>
+                    <div className="text-slate-300 text-sm">System</div>
+                    <div className="text-white font-medium">
+                      {vitals.hardware.systemVendor}{" "}
+                      {vitals.hardware.systemModel}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Top Processes */}
+          {vitals.topProcesses && vitals.topProcesses.length > 0 && (
+            <div className="bg-[#16213e] border border-[#393e5c] p-4 rounded-sm shadow-lg">
+              <h2 className="text-lg font-medium text-white mb-4">
+                Top Processes
+              </h2>
+              <div className="overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="text-slate-300 border-b border-[#393e5c]">
+                    <tr>
+                      <th className="text-left pb-2">Process</th>
+                      <th className="text-right pb-2">CPU</th>
+                      <th className="text-right pb-2">Mem</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {vitals.topProcesses.map((process, i) => (
+                      <tr
+                        key={i}
+                        className="border-b border-[#232b4a] last:border-0"
+                      >
+                        <td
+                          className="py-2 text-white truncate"
+                          title={process.command}
+                        >
+                          {process.name}
+                        </td>
+                        <td className="py-2 text-right text-purple-300">
+                          {process.cpu.toFixed(1)}%
+                        </td>
+                        <td className="py-2 text-right text-indigo-300">
+                          {process.memory.toFixed(1)}%
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Network Interfaces */}
+          {vitals.networkIfaces && vitals.networkIfaces.length > 0 && (
+            <div className="bg-[#16213e] border border-[#393e5c] p-4 rounded-sm shadow-lg">
+              <h2 className="text-lg font-medium text-white mb-4">
+                Network Interfaces
+              </h2>
+              <div className="space-y-3">
+                {vitals.networkIfaces
+                  .filter((iface) => iface.isUp)
+                  .map((iface, i) => (
+                    <div
+                      key={i}
+                      className="border-b border-[#232b4a] last:border-0 pb-2 last:pb-0"
+                    >
+                      <div className="flex justify-between mb-1">
+                        <span className="text-white font-medium">
+                          {iface.name}
+                        </span>
+                        <span
+                          className={`text-xs px-1.5 py-0.5 rounded ${
+                            iface.isUp
+                              ? "bg-green-900/40 text-green-300"
+                              : "bg-red-900/40 text-red-300"
+                          }`}
+                        >
+                          {iface.isUp ? "UP" : "DOWN"}
+                        </span>
+                      </div>
+                      <div className="text-sm text-purple-200 mb-1">
+                        {iface.ipAddress || "No IP Address"}
+                      </div>
+                      <div className="text-xs text-slate-400">
+                        MAC: {iface.macAddr || "Unknown"}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* Disk Usage */}
+          {vitals.disks && vitals.disks.length > 0 && (
+            <div className="bg-[#16213e] border border-[#393e5c] p-4 rounded-sm shadow-lg">
+              <h2 className="text-lg font-medium text-white mb-4">Storage</h2>
+              <div className="space-y-4">
+                {vitals.disks.map((disk, index) => (
+                  <div
+                    key={index}
+                    className="border-b border-[#232b4a] last:border-0 pb-3 last:pb-0"
+                  >
+                    <div className="flex justify-between mb-1">
+                      <span className="text-slate-300 font-medium">
+                        {disk.mountPoint}
+                      </span>
+                      <span className="text-xs text-slate-400">
+                        {disk.fileSystem}
+                      </span>
+                    </div>
+                    <div className="relative w-full h-2 bg-[#272b45] rounded-sm overflow-hidden mb-2">
+                      <div
+                        className="absolute top-0 left-0 h-full bg-[#5e60ce]"
+                        style={{ width: `${disk.usedPercent}%` }}
+                      ></div>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-300">
+                        {formatBytes(disk.used)} / {formatBytes(disk.total)}
+                      </span>
+                      <span className="text-white font-medium">
+                        {disk.usedPercent.toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* CPU Per Core */}
+          {vitals.cpuPerCore && vitals.cpuPerCore.length > 0 && (
+            <div className="bg-[#16213e] border border-[#393e5c] p-4 rounded-sm shadow-lg">
+              <h2 className="text-lg font-medium text-white mb-4">CPU Cores</h2>
+              <div className="space-y-3">
+                {vitals.cpuPerCore.map((usage, i) => (
+                  <div key={i}>
+                    <div className="flex justify-between mb-1 text-sm">
+                      <span className="text-slate-300">Core {i}</span>
+                      <span className="text-white">{usage.toFixed(1)}%</span>
+                    </div>
+                    <div className="relative w-full h-1.5 bg-[#272b45] rounded-sm overflow-hidden">
+                      <div
+                        className="absolute top-0 left-0 h-full bg-gradient-to-r from-purple-600 to-indigo-600"
+                        style={{ width: `${usage}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* System Updates */}
+          {vitals.systemUpdates > 0 && (
+            <div className="bg-[#16213e] border border-amber-700/30 p-4 rounded-sm shadow-lg">
+              <div className="flex items-center">
+                <div className="w-8 h-8 flex items-center justify-center bg-amber-600/20 rounded-sm mr-3">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 text-amber-400"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-lg font-medium text-white">
+                    System Updates Available
+                  </h2>
+                  <p className="text-amber-300">
+                    {vitals.systemUpdates} package
+                    {vitals.systemUpdates !== 1 ? "s" : ""} can be updated
+                  </p>
+                </div>
               </div>
             </div>
           )}
