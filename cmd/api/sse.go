@@ -32,37 +32,66 @@ type SystemVitals struct {
 }
 
 func (app *application) initiateSSE(w http.ResponseWriter, r *http.Request) {
-
 	// Set appropriate headers for SSE
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	// Get response controller for flushing
-	rc := http.NewResponseController(w)
+	// Check for flusher capability
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "Streaming not supported", http.StatusInternalServerError)
+		return
+	}
 
-	go app.sendSSE(rc)
-}
+	// Register client disconnect detection
+	notify := r.Context().Done()
+	go func() {
+		<-notify
+		log.Println("Client disconnected")
+	}()
 
-func (app *application) sendSSE(rc *http.ResponseController) {
+	// Send SSE data at regular intervals
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	// Send initial data immediately
+	sendVitalsData(w, flusher)
+
+	// Keep sending data until client disconnects
 	for {
-		vitals := collectSystemVitals()
-
-		jsonData, err := json.Marshal(vitals)
-		if err != nil {
-			log.Printf("Error marshalling JSON: %v", err)
-			continue
+		select {
+		case <-notify:
+			return
+		case <-ticker.C:
+			sendVitalsData(w, flusher)
 		}
-
-		fmt.Printf("Sending data: %s\n", string(jsonData))
-		rc.Flush()
-		time.Sleep(time.Second * 5)
 	}
 }
 
-func collectSystemVitals() SystemVitals {
-	vitals := SystemVitals{}
+func sendVitalsData(w http.ResponseWriter, flusher http.Flusher) {
+	vitals := collectSystemVitals()
+
+	jsonData, err := json.Marshal(vitals)
+	if err != nil {
+		log.Printf("Error marshalling JSON: %v", err)
+		return
+	}
+
+	// Write the SSE data format
+	_, err = fmt.Fprintf(w, "data: %s\n\n", jsonData)
+	if err != nil {
+		log.Printf("Error writing to client: %v", err)
+		return
+	}
+
+	// Ensure data is sent immediately
+	flusher.Flush()
+}
+
+func collectSystemVitals() *SystemVitals {
+	vitals := &SystemVitals{}
 
 	// CPU Usage (1-second average)
 	cpuPercents, err := cpu.Percent(time.Second, false)

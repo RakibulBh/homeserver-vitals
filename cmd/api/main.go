@@ -2,16 +2,12 @@ package main
 
 import (
 	"log"
-	"time"
 
 	"github.com/RakibulBh/homeserver-vitals/internal/env"
 	"github.com/joho/godotenv"
 )
 
 func main() {
-	startTime := time.Now()
-	log.Printf("Application starting at %s", startTime.Format(time.RFC3339))
-
 	// Load environment variables
 	if err := godotenv.Load(); err != nil {
 		log.Printf("Warning: .env file not found or could not be loaded: %v", err)
@@ -26,7 +22,7 @@ func main() {
 
 	// Load configuration
 	cfg := config{
-		addr: ":" + env.GetString("PORT", "8080"),
+		addr: ":" + env.GetString("PORT", "2000"),
 		env:  environment,
 	}
 
@@ -37,9 +33,6 @@ func main() {
 	// Prepare server
 	log.Printf("Setting up HTTP server on %s", cfg.addr)
 	mux := app.serve()
-
-	// Record startup metrics
-	log.Printf("Application ready in %v", time.Since(startTime))
 
 	log.Fatal(app.run(mux))
 

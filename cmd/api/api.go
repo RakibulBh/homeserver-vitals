@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"time"
 
@@ -53,11 +54,12 @@ func (app *application) run(mux http.Handler) error {
 	srv := http.Server{
 		Addr:              app.config.addr,
 		Handler:           mux,
-		WriteTimeout:      80 * time.Second,
 		ReadTimeout:       80 * time.Second,
 		IdleTimeout:       time.Minute,
 		ReadHeaderTimeout: 50 * time.Second,
 	}
+
+	log.Printf("Starting HTTP server, listening on %s", app.config.addr)
 
 	return srv.ListenAndServe()
 }
