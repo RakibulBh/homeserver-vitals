@@ -22,7 +22,9 @@ export default function Home() {
     updateTime();
     const timer = setInterval(updateTime, 1000);
 
-    const eventSource = new EventSource("http://localhost:2000/sse");
+    const eventSource = new EventSource(
+      process.env.NEXT_PUBLIC_API_URL + "/sse"
+    );
 
     eventSource.onmessage = (event) => {
       try {
